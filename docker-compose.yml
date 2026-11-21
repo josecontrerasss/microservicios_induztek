@@ -16,6 +16,20 @@ services:
       timeout: 5s
       retries: 30
 
+  autenticacion:
+    build: ./autenticacion
+    container_name: induztek-autenticacion
+    restart: unless-stopped
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/autenticacion
+      DB_CLAVE: ${DB_CLAVE:-induztek}
+      JWT_SECRETO: ${JWT_SECRETO:-induztek-secreto-de-desarrollo-cambiar-en-produccion-2026}
+    ports:
+      - "8081:8081"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
   api-gateway:
     build: ./api-gateway
     container_name: induztek-gateway
@@ -26,6 +40,8 @@ services:
       SERVICIOS_PROTOCOLOS_URL: http://protocolos:8083
     ports:
       - "8080:8080"
+    depends_on:
+      - autenticacion
 
 volumes:
   mysql-datos:
