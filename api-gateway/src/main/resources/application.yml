@@ -1,0 +1,32 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      server:
+        webmvc:
+          routes:
+            - id: ruta-autenticacion
+              uri: ${SERVICIOS_AUTENTICACION_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/auth/**,/api/usuarios/**
+              filters:
+                - StripPrefix=1
+
+            - id: ruta-instalaciones
+              uri: ${SERVICIOS_INSTALACIONES_URL:http://localhost:8082}
+              predicates:
+                - Path=/api/instalaciones/**,/api/asignaciones/**,/api/tecnicos/*/empresas,/api/equipos/**,/api/visitas/**,/api/tipos-equipo,/api/clientes/*/instalaciones,/api/clientes/*/visitas,/api/clientes/*/tecnicos,/api/tecnicos/*/instalaciones,/api/tecnicos/*/visitas,/api/tecnicos/*/equipos
+              filters:
+                - StripPrefix=1
+
+            - id: ruta-protocolos
+              uri: ${SERVICIOS_PROTOCOLOS_URL:http://localhost:8083}
+              predicates:
+                - Path=/api/protocolos/**,/api/clientes/*/protocolos,/api/tecnicos/*/protocolos
+              filters:
+                - StripPrefix=1
