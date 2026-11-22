@@ -17,7 +17,7 @@ public class OpenApiConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title("Induztek - Autenticación")
-                        .description("Registro e inicio de sesión con JWT")
+                        .description("Registro, inicio de sesión, perfil y recuperación de clave")
                         .version("1.0"))
                 .components(new Components().addSecuritySchemes("bearer",
                         new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT")))

@@ -8,6 +8,9 @@ import cl.induztek.autenticacion.exception.SolicitudInvalidaException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.mail.MailException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -18,6 +21,8 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class ManejadorExcepciones {
+
+    private static final Logger log = LoggerFactory.getLogger(ManejadorExcepciones.class);
 
     private ResponseEntity<Map<String, Object>> construirRespuesta(HttpStatus status, String mensaje, Map<String, String> errores) {
         Map<String, Object> cuerpo = new LinkedHashMap<>();
@@ -66,5 +71,11 @@ public class ManejadorExcepciones {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<Map<String, Object>> manejarCuerpoIlegible(HttpMessageNotReadableException ex) {
         return construirRespuesta(HttpStatus.BAD_REQUEST, "El cuerpo de la solicitud no es válido", null);
+    }
+
+    @ExceptionHandler(MailException.class)
+    public ResponseEntity<Map<String, Object>> manejarCorreo(MailException ex) {
+        log.error("No se pudo enviar el correo: {}", ex.getMessage());
+        return construirRespuesta(HttpStatus.SERVICE_UNAVAILABLE, "No se pudo enviar el correo, intenta más tarde", null);
     }
 }

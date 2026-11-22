@@ -5,10 +5,13 @@ import org.springframework.stereotype.Service;
 
 import cl.induztek.autenticacion.exception.ConflictoException;
 import cl.induztek.autenticacion.exception.CredencialesInvalidasException;
+import cl.induztek.autenticacion.exception.RecursoNoEncontradoException;
 import cl.induztek.autenticacion.exception.SolicitudInvalidaException;
 import cl.induztek.autenticacion.model.AuthRespuestaDTO;
+import cl.induztek.autenticacion.model.CambiarClaveDTO;
 import cl.induztek.autenticacion.model.LoginDTO;
 import cl.induztek.autenticacion.model.Usuario;
+import cl.induztek.autenticacion.model.UsuarioActualizarDTO;
 import cl.induztek.autenticacion.model.UsuarioMostrarDTO;
 import cl.induztek.autenticacion.model.UsuarioRegistroDTO;
 import cl.induztek.autenticacion.repository.UsuarioRepository;
@@ -59,6 +62,42 @@ public class UsuarioService {
         }
         String token = jwtService.generarToken(usuario.getId(), usuario.getCorreo(), usuario.getRol());
         return new AuthRespuestaDTO(token, usuario.getRol(), convertirADTO(usuario));
+    }
+
+    public UsuarioMostrarDTO obtenerUsuario(Long id) {
+        return convertirADTO(buscarPorId(id));
+    }
+
+    public UsuarioMostrarDTO actualizarPerfil(Long id, UsuarioActualizarDTO dto) {
+        Usuario usuario = buscarPorId(id);
+        String correo = normalizarCorreo(dto.getCorreo());
+        if (repository.existsByCorreoAndIdNot(correo, id)) {
+            throw new ConflictoException("Ese correo ya está en uso");
+        }
+        usuario.setNombre(dto.getNombre().trim());
+        usuario.setCorreo(correo);
+        usuario.setTelefono(textoOpcional(dto.getTelefono()));
+        usuario.setGiro(textoOpcional(dto.getGiro()));
+        usuario.setContactoNombre(textoOpcional(dto.getContactoNombre()));
+        usuario.setContactoCargo(textoOpcional(dto.getContactoCargo()));
+        return convertirADTO(repository.save(usuario));
+    }
+
+    public void cambiarClave(Long id, CambiarClaveDTO dto) {
+        Usuario usuario = buscarPorId(id);
+        if (!passwordEncoder.matches(dto.getClaveActual(), usuario.getContrasena())) {
+            throw new SolicitudInvalidaException("La contraseña actual es incorrecta");
+        }
+        if (dto.getClaveActual().equals(dto.getClaveNueva())) {
+            throw new SolicitudInvalidaException("La nueva contraseña debe ser distinta a la actual");
+        }
+        usuario.setContrasena(passwordEncoder.encode(dto.getClaveNueva()));
+        repository.save(usuario);
+    }
+
+    private Usuario buscarPorId(Long id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado con ID: " + id));
     }
 
     private String normalizarCorreo(String correo) {
