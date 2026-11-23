@@ -18,6 +18,7 @@ public class Usuario {
 
     public static final String ROL_TECNICO = "TECNICO";
     public static final String ROL_CLIENTE = "CLIENTE";
+    public static final String ROL_SUPERVISOR = "SUPERVISOR";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

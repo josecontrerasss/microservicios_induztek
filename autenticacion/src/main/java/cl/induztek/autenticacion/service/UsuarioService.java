@@ -1,5 +1,7 @@
 package cl.induztek.autenticacion.service;
 
+import java.util.List;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -64,6 +66,10 @@ public class UsuarioService {
         return new AuthRespuestaDTO(token, usuario.getRol(), convertirADTO(usuario));
     }
 
+    public List<UsuarioMostrarDTO> listarPorRol(String rol) {
+        return repository.findByRolAndActivoTrueOrderByNombreAsc(rol).stream().map(this::convertirADTO).toList();
+    }
+
     public UsuarioMostrarDTO obtenerUsuario(Long id) {
         return convertirADTO(buscarPorId(id));
     }
@@ -116,7 +122,11 @@ public class UsuarioService {
         dto.setCorreo(u.getCorreo());
         dto.setTelefono(u.getTelefono());
         dto.setRol(u.getRol());
-        dto.setIdRol(Usuario.ROL_TECNICO.equals(u.getRol()) ? 1 : 4);
+        dto.setIdRol(switch (u.getRol()) {
+            case Usuario.ROL_TECNICO -> 1;
+            case Usuario.ROL_SUPERVISOR -> 3;
+            default -> 4;
+        });
         dto.setActivo(u.getActivo());
         dto.setGiro(u.getGiro());
         dto.setContactoNombre(u.getContactoNombre());

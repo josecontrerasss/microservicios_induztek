@@ -32,6 +32,37 @@ services:
       mysql:
         condition: service_healthy
 
+  instalaciones:
+    build: ./instalaciones
+    container_name: induztek-instalaciones
+    restart: unless-stopped
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/instalaciones
+      DB_CLAVE: ${DB_CLAVE:-induztek}
+      JWT_SECRETO: ${JWT_SECRETO:-induztek-secreto-de-desarrollo-cambiar-en-produccion-2026}
+    ports:
+      - "8082:8082"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  protocolos:
+    build: ./protocolos
+    container_name: induztek-protocolos
+    restart: unless-stopped
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/protocolos
+      DB_CLAVE: ${DB_CLAVE:-induztek}
+      JWT_SECRETO: ${JWT_SECRETO:-induztek-secreto-de-desarrollo-cambiar-en-produccion-2026}
+      SERVICIOS_INSTALACIONES_URL: http://instalaciones:8082
+    ports:
+      - "8083:8083"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      instalaciones:
+        condition: service_started
+
   api-gateway:
     build: ./api-gateway
     container_name: induztek-gateway
@@ -44,6 +75,8 @@ services:
       - "8080:8080"
     depends_on:
       - autenticacion
+      - instalaciones
+      - protocolos
 
 volumes:
   mysql-datos:

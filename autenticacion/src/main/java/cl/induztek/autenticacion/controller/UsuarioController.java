@@ -2,6 +2,7 @@ package cl.induztek.autenticacion.controller;
 
 import cl.induztek.autenticacion.exception.AccesoDenegadoException;
 import cl.induztek.autenticacion.model.CambiarClaveDTO;
+import cl.induztek.autenticacion.model.Usuario;
 import cl.induztek.autenticacion.model.UsuarioActualizarDTO;
 import cl.induztek.autenticacion.model.UsuarioMostrarDTO;
 import cl.induztek.autenticacion.security.JwtFiltro;
@@ -13,6 +14,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -31,6 +34,22 @@ public class UsuarioController {
 
     public UsuarioController(UsuarioService usuarioService) {
         this.usuarioService = usuarioService;
+    }
+
+    @Operation(summary = "Listar usuarios por rol", description = "Solo el supervisor puede listar técnicos o clientes para crear asignaciones.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Listado obtenido"),
+            @ApiResponse(responseCode = "401", description = "No autenticado"),
+            @ApiResponse(responseCode = "403", description = "Solo para supervisor")
+    })
+    @GetMapping
+    public ResponseEntity<List<UsuarioMostrarDTO>> listarPorRol(
+            @RequestParam String rol,
+            @Parameter(hidden = true) @RequestAttribute(JwtFiltro.ATRIBUTO_USUARIO) UsuarioToken usuarioToken) {
+        if (!Usuario.ROL_SUPERVISOR.equals(usuarioToken.rol())) {
+            throw new AccesoDenegadoException("Solo el supervisor puede listar usuarios");
+        }
+        return ResponseEntity.ok(usuarioService.listarPorRol(rol.trim().toUpperCase()));
     }
 
     @Operation(summary = "Obtener usuario", description = "Obtiene el perfil del usuario autenticado por su id")
