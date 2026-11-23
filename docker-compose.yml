@@ -1,0 +1,49 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: induztek-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_CLAVE:-induztek}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-datos:/var/lib/mysql
+      - ./init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  autenticacion:
+    build: ./autenticacion
+    container_name: induztek-autenticacion
+    restart: unless-stopped
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/autenticacion
+      DB_CLAVE: ${DB_CLAVE:-induztek}
+      JWT_SECRETO: ${JWT_SECRETO:-induztek-secreto-de-desarrollo-cambiar-en-produccion-2026}
+      MAIL_USUARIO: ${MAIL_USUARIO:-}
+      MAIL_CLAVE: ${MAIL_CLAVE:-}
+    ports:
+      - "8081:8081"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: induztek-gateway
+    restart: unless-stopped
+    environment:
+      SERVICIOS_AUTENTICACION_URL: http://autenticacion:8081
+      SERVICIOS_INSTALACIONES_URL: http://instalaciones:8082
+      SERVICIOS_PROTOCOLOS_URL: http://protocolos:8083
+    ports:
+      - "8080:8080"
+    depends_on:
+      - autenticacion
+
+volumes:
+  mysql-datos:
