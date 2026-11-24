@@ -16,11 +16,19 @@ services:
       timeout: 5s
       retries: 30
 
+  eureka-server:
+    build: ./eureka-server
+    container_name: induztek-eureka
+    restart: unless-stopped
+    ports:
+      - "8761:8761"
+
   autenticacion:
     build: ./autenticacion
     container_name: induztek-autenticacion
     restart: unless-stopped
     environment:
+      EUREKA_URL: http://eureka-server:8761/eureka/
       DB_URL: jdbc:mysql://mysql:3306/autenticacion
       DB_CLAVE: ${DB_CLAVE:-induztek}
       JWT_SECRETO: ${JWT_SECRETO:-induztek-secreto-de-desarrollo-cambiar-en-produccion-2026}
@@ -29,6 +37,8 @@ services:
     ports:
       - "8081:8081"
     depends_on:
+      eureka-server:
+        condition: service_started
       mysql:
         condition: service_healthy
 
@@ -37,12 +47,15 @@ services:
     container_name: induztek-instalaciones
     restart: unless-stopped
     environment:
+      EUREKA_URL: http://eureka-server:8761/eureka/
       DB_URL: jdbc:mysql://mysql:3306/instalaciones
       DB_CLAVE: ${DB_CLAVE:-induztek}
       JWT_SECRETO: ${JWT_SECRETO:-induztek-secreto-de-desarrollo-cambiar-en-produccion-2026}
     ports:
       - "8082:8082"
     depends_on:
+      eureka-server:
+        condition: service_started
       mysql:
         condition: service_healthy
 
@@ -51,13 +64,15 @@ services:
     container_name: induztek-protocolos
     restart: unless-stopped
     environment:
+      EUREKA_URL: http://eureka-server:8761/eureka/
       DB_URL: jdbc:mysql://mysql:3306/protocolos
       DB_CLAVE: ${DB_CLAVE:-induztek}
       JWT_SECRETO: ${JWT_SECRETO:-induztek-secreto-de-desarrollo-cambiar-en-produccion-2026}
-      SERVICIOS_INSTALACIONES_URL: http://instalaciones:8082
     ports:
       - "8083:8083"
     depends_on:
+      eureka-server:
+        condition: service_started
       mysql:
         condition: service_healthy
       instalaciones:
@@ -68,12 +83,11 @@ services:
     container_name: induztek-gateway
     restart: unless-stopped
     environment:
-      SERVICIOS_AUTENTICACION_URL: http://autenticacion:8081
-      SERVICIOS_INSTALACIONES_URL: http://instalaciones:8082
-      SERVICIOS_PROTOCOLOS_URL: http://protocolos:8083
+      EUREKA_URL: http://eureka-server:8761/eureka/
     ports:
       - "8080:8080"
     depends_on:
+      - eureka-server
       - autenticacion
       - instalaciones
       - protocolos

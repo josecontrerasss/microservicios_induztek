@@ -1,14 +1,8 @@
 package cl.induztek.protocolos.client;
 
-import java.time.Duration;
+import java.util.function.Supplier;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientException;
 
 import cl.induztek.protocolos.exception.AccesoDenegadoException;
 import cl.induztek.protocolos.exception.ServicioNoDisponibleException;
@@ -16,38 +10,36 @@ import cl.induztek.protocolos.exception.SolicitudInvalidaException;
 import cl.induztek.protocolos.model.EquipoRemotoDTO;
 import cl.induztek.protocolos.model.InstalacionRemotaDTO;
 import cl.induztek.protocolos.model.VisitaRemotaDTO;
+import feign.FeignException;
 
 @Component
 public class InstalacionesCliente {
-    private final RestClient restClient;
+    private final InstalacionesApi api;
 
-    public InstalacionesCliente(@Value("${servicios.instalaciones.url}") String url) {
-        SimpleClientHttpRequestFactory fabrica = new SimpleClientHttpRequestFactory();
-        fabrica.setConnectTimeout(Duration.ofSeconds(5));
-        fabrica.setReadTimeout(Duration.ofSeconds(10));
-        this.restClient = RestClient.builder().baseUrl(url).requestFactory(fabrica).build();
+    public InstalacionesCliente(InstalacionesApi api) {
+        this.api = api;
     }
 
     public VisitaRemotaDTO obtenerVisita(Long id, String autorizacion) {
-        return obtener("/visitas/{id}", id, autorizacion, VisitaRemotaDTO.class, "La visita " + id + " no existe");
+        return obtener(() -> api.obtenerVisita(id, autorizacion), "La visita " + id + " no existe");
     }
 
     public EquipoRemotoDTO obtenerEquipo(Long id, String autorizacion) {
-        return obtener("/equipos/{id}", id, autorizacion, EquipoRemotoDTO.class, "El equipo " + id + " no existe");
+        return obtener(() -> api.obtenerEquipo(id, autorizacion), "El equipo " + id + " no existe");
     }
 
     public InstalacionRemotaDTO obtenerInstalacion(Long id, String autorizacion) {
-        return obtener("/instalaciones/{id}", id, autorizacion, InstalacionRemotaDTO.class, "La instalación " + id + " no existe");
+        return obtener(() -> api.obtenerInstalacion(id, autorizacion), "La instalación " + id + " no existe");
     }
 
-    private <T> T obtener(String ruta, Long id, String autorizacion, Class<T> tipo, String mensajeNoExiste) {
+    private <T> T obtener(Supplier<T> llamada, String mensajeNoExiste) {
         try {
-            return restClient.get().uri(ruta, id).header(HttpHeaders.AUTHORIZATION, autorizacion).retrieve().body(tipo);
-        } catch (HttpClientErrorException.NotFound e) {
+            return llamada.get();
+        } catch (FeignException.NotFound e) {
             throw new SolicitudInvalidaException(mensajeNoExiste);
-        } catch (HttpClientErrorException.Forbidden e) {
+        } catch (FeignException.Forbidden e) {
             throw new AccesoDenegadoException("No estás asignado a esa visita o instalación");
-        } catch (RestClientException e) {
+        } catch (FeignException e) {
             throw new ServicioNoDisponibleException("El servicio de instalaciones no está disponible");
         }
     }
