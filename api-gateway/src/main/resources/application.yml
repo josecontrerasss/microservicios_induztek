@@ -11,22 +11,31 @@ spring:
         webmvc:
           routes:
             - id: ruta-autenticacion
-              uri: ${SERVICIOS_AUTENTICACION_URL:http://localhost:8081}
+              uri: lb://autenticacion
               predicates:
                 - Path=/api/auth/**,/api/usuarios/**
               filters:
                 - StripPrefix=1
 
             - id: ruta-instalaciones
-              uri: ${SERVICIOS_INSTALACIONES_URL:http://localhost:8082}
+              uri: lb://instalaciones
               predicates:
                 - Path=/api/instalaciones/**,/api/asignaciones/**,/api/tecnicos/*/empresas,/api/equipos/**,/api/visitas/**,/api/tipos-equipo,/api/clientes/*/instalaciones,/api/clientes/*/visitas,/api/clientes/*/tecnicos,/api/tecnicos/*/instalaciones,/api/tecnicos/*/visitas,/api/tecnicos/*/equipos
               filters:
                 - StripPrefix=1
 
             - id: ruta-protocolos
-              uri: ${SERVICIOS_PROTOCOLOS_URL:http://localhost:8083}
+              uri: lb://protocolos
               predicates:
                 - Path=/api/protocolos/**,/api/clientes/*/protocolos,/api/tecnicos/*/protocolos
               filters:
                 - StripPrefix=1
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+    registry-fetch-interval-seconds: 5
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 5
